@@ -1,10 +1,13 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 
 import Button from '../../../components/UI/Button/Button';
 import Spinner from '../../../components/UI/Spinner/Spinner';
 import classes from './ContactData.module.css';
 import axios from '../../../axios-orders';
 import Input from '../../../components/UI/Input/Input';
+import withErrorHandler from '../../../hoc/withErrorHandler/withErrorHandler';
+import { purchaseBurger } from '../../../store/actions';
 
 class ContactData extends Component {
     state = {
@@ -81,7 +84,7 @@ class ContactData extends Component {
                 elementConfig: {
                     options: [
                         { value: 'fastest', displayValue: 'Fastest' },
-                        { value: 'cheapest', displayValue: 'Cheapest' },
+                        { value: 'cheapest', displayValue: 'Cheapest' }
                     ]
                 },
                 value: 'cheapest',
@@ -89,52 +92,50 @@ class ContactData extends Component {
                 valid: true
             }
         },
-        isValidForm: false,
-        loading: false
-    }
+        isValidForm: false
+    };
 
-    orderHandler = (event) => {
+    orderHandler = event => {
         event.preventDefault();
         const formData = {};
         for (let orderInputIdentifier in this.state.orderForm) {
-            formData[orderInputIdentifier] = this.state.orderForm[orderInputIdentifier].value;
+            formData[orderInputIdentifier] = this.state.orderForm[
+                orderInputIdentifier
+            ].value;
         }
-        this.setState({ loading: true });
         const order = {
-            ingredients: this.props.ingredients,
+            ingredients: this.props.ings,
             price: this.props.price,
             customer: formData
         };
-        axios.post('/orders.json', order)
-            .then(response => {
-                this.setState({
-                    loading: false
-                });
-                this.props.history.push('/');
-            })
-            .catch(error => {
-                this.setState({
-                    loading: false
-                });
-            });
-    }
+
+        this.props.onOrderBurger(order);
+        alert('Redirect now');
+    };
 
     inputChangedHandler = (event, inputIdentifier) => {
         const updatedOrderForm = { ...this.state.orderForm };
-        const updatedFormElement = {...updatedOrderForm[inputIdentifier]};
+        const updatedFormElement = { ...updatedOrderForm[inputIdentifier] };
         updatedFormElement.value = event.target.value;
         updatedFormElement.touched = true;
-        updatedFormElement.valid = this.checkValidity(updatedFormElement.value, updatedFormElement.validation);
+        updatedFormElement.valid = this.checkValidity(
+            updatedFormElement.value,
+            updatedFormElement.validation
+        );
         updatedOrderForm[inputIdentifier] = updatedFormElement;
 
         let isFormValid = true;
         for (let inputIdentifier in updatedOrderForm) {
             if (updatedOrderForm[inputIdentifier].validation) {
-                isFormValid = updatedOrderForm[inputIdentifier].valid && isFormValid;
+                isFormValid =
+                    updatedOrderForm[inputIdentifier].valid && isFormValid;
             }
         }
-        this.setState({orderForm: updatedOrderForm, isValidForm: isFormValid});
-    }
+        this.setState({
+            orderForm: updatedOrderForm,
+            isValidForm: isFormValid
+        });
+    };
 
     checkValidity(value, rules) {
         let isValid = true;
@@ -166,20 +167,27 @@ class ContactData extends Component {
         let form = (
             <form onSubmit={this.orderHandler}>
                 {formElementsArray.map(el => {
-                    return <Input 
-                                key={el.id}
-                                elementType={el.config.elementType}
-                                elementConfig={el.config.elementConfig}
-                                value={el.config.value}
-                                invalid={!el.config.valid}
-                                shouldValidate={el.config.validation}
-                                touched={el.config.touched}
-                                changed={(event) => this.inputChangedHandler(event, el.id)} />
+                    return (
+                        <Input
+                            key={el.id}
+                            elementType={el.config.elementType}
+                            elementConfig={el.config.elementConfig}
+                            value={el.config.value}
+                            invalid={!el.config.valid}
+                            shouldValidate={el.config.validation}
+                            touched={el.config.touched}
+                            changed={event =>
+                                this.inputChangedHandler(event, el.id)
+                            }
+                        />
+                    );
                 })}
-                <Button btnType="Success" disabled={!this.state.isValidForm}>ORDER</Button>
+                <Button btnType="Success" disabled={!this.state.isValidForm}>
+                    ORDER
+                </Button>
             </form>
         );
-        if (this.state.loading) {
+        if (this.props.loading) {
             form = <Spinner />;
         }
 
@@ -188,8 +196,24 @@ class ContactData extends Component {
                 <h4>Enter your Contact Data</h4>
                 {form}
             </div>
-        )
+        );
     }
 }
 
-export default ContactData;
+const mapStateToProps = state => {
+    return {
+        ings: state.burgerBuilder.ingredients,
+        price: state.burgerBuilder.totalPrice,
+        loading: state.order.loading
+    };
+};
+const mapDispatchToProps = dispatch => {
+    return {
+        onOrderBurger: orderData => dispatch(purchaseBurger(orderData))
+    };
+};
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(withErrorHandler(ContactData, axios));
