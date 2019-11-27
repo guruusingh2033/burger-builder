@@ -31,6 +31,7 @@ const buildControls = props => (
         >
             {props.isAuth ? 'ORDER NOW' : 'SIGN UP TO ORDER'}
         </button>
+        {/* Hello */}
     </div>
 );
 
