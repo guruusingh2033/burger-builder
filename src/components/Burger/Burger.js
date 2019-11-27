@@ -10,6 +10,8 @@ const burger = (props) => {
                 return <BurgerIngredient key={igKey + i} type={igKey} />
             });
         });
+
+        // Hello
     
     const combinedIngredients = transformedIngredients
         .reduce((arr,el) => {
